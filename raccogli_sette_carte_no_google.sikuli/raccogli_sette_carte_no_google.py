@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import time
 import sys
 import math
 sys.path.append(getBundlePath())
@@ -11,7 +10,7 @@ import java.awt.event.InputEvent as InputEvent
 # CONFIGURAZIONE
 # ================================================================
 _robot = Robot()
-TARGET = (14, 129, 115)
+TARGET = (14, 129, 115)  # colore RGB del punto blu da cliccare sulle carte
 
 ACCOUNT_CONFIG = [
     ('nadiafilippabognanni', "1775319561626.png"),

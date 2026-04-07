@@ -1,35 +1,38 @@
-import time
+# -*- coding: utf-8 -*-
 import sys
+import math
 sys.path.append(getBundlePath())   # trova i moduli nella stessa cartella .sikuli
-from sikuli import *   # <-- aggiunge tutte le funzioni SikuliX al modulo
-# lancia tutto
-
-
+from sikuli import *               # aggiunge tutte le funzioni SikuliX al modulo
+import java.awt.Robot as Robot
+import java.awt.event.InputEvent as InputEvent
 
 # ================================================================
-# CONFIGURAZIONE ACCOUNTcerca_con_tentativi
+# CONFIGURAZIONE ACCOUNT
 # ================================================================
+_robot = Robot()
+TARGET = (14, 129, 115)  # colore RGB del punto blu da cliccare sulle carte
+
 ACCOUNT_CONFIG = {
-    'garsal1971': {
-        'google':   "1775290644794.png"
-    },
-    'adagarofalobognanni': {
-        'google':   "1775145979844.png"
-    },
-    'berros1974': {
-        'google':   "1775217119680.png"
-    },
-     'gmx.salgar71': {
-         'google':   "1775236822745.png"
-     },
-     'berros7426': {
-         'google':   "1775237806527.png"
-     }
+    'garsal1971':          {'google': "1775290644794.png"},
+    'adagarofalobognanni': {'google': "1775145979844.png"},
+    'berros1974':          {'google': "1775217119680.png"},
+    'gmx.salgar71':        {'google': "1775236822745.png"},
+    'berros7426':          {'google': "1775237806527.png"},
     # aggiungi altri account qui sotto
 }
 
 # ================================================================
-# UTILITY
+# UTILITY SCROLL
+# ================================================================
+def scroll_giu(volte=35, x=185, y=400, sposta_mouse=True):
+    if sposta_mouse:
+        _robot.mouseMove(x, y)
+    for i in range(volte):
+        _robot.mouseWheel(3)
+        wait(0.05)
+
+# ================================================================
+# UTILITY GENERALI
 # ================================================================
 def cerca_con_tentativi(immagine, max_tentativi=5, attesa=0.5):
     # cerca immagine sullo schermo con N tentativi prima di rinunciare
@@ -40,6 +43,14 @@ def cerca_con_tentativi(immagine, max_tentativi=5, attesa=0.5):
         wait(attesa)
     print("  ERRORE: [{0}] non trovata dopo {1} tentativi.".format(immagine, max_tentativi))
     return False
+
+def colore_vicino(c1, c2, soglia=20):
+    return (abs(c1[0]-c2[0]) < soglia and
+            abs(c1[1]-c2[1]) < soglia and
+            abs(c1[2]-c2[2]) < soglia)
+
+def distanza(x1, y1, x2, y2):
+    return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
 # ================================================================
 # APERTURA APP
@@ -77,14 +88,12 @@ def apri_account(account='', max_tentativi=5, attesa=0.5):
     print("  [1/5] menu account aperto OK")
     wait(0.3)
 
-# passo 2: seleziona account tramite schermata bentornato (uguale per tutti)
+    # passo 2: seleziona account tramite schermata bentornato (coordinate fisse)
+    # TODO: sostituire con ricerca immagine se si cattura lo screenshot della schermata bentornato
     print("  [2/5] selezione account {0} tramite bentornato...".format(account))
-
     click(Location(185, 272))
-    
     print("  [2/5] account selezionato OK")
     wait(0.5)
-   
 
     # passo 3: avvia il login tramite Google
     print("  [3/5] avvio login Google...")
@@ -96,9 +105,9 @@ def apri_account(account='', max_tentativi=5, attesa=0.5):
     print("  [3/5] login Google avviato, attendo caricamento pagina...")
     wait(10)
 
-# passo 4: conferma il login (immagine uguale per tutti gli account)
+    # passo 4: conferma il login (immagine uguale per tutti gli account)
     print("  [4/5] conferma login...")
-    if not cerca_con_tentativi(Pattern("1775293074174.png").targetOffset(29,36), max_tentativi, attesa):
+    if not cerca_con_tentativi(Pattern("1775293074174.png").targetOffset(29, 36), max_tentativi, attesa):
         print("  [4/5] ERRORE: pulsante conferma non trovato.")
         return False
     click(getLastMatch())
@@ -111,7 +120,7 @@ def apri_account(account='', max_tentativi=5, attesa=0.5):
         print("  [5/5] ERRORE: opzione accesso aggiuntivo non trovata.")
         return False
     click(getLastMatch())
-    wheel(WHEEL_DOWN, 15)
+    scroll_giu(volte=15, x=185, y=400, sposta_mouse=True)
     if not cerca_con_tentativi("1775148488576.png", max_tentativi, attesa):
         print("  [5/5] ERRORE: conferma accesso aggiuntivo non trovata.")
         return False
@@ -125,11 +134,11 @@ def apri_account(account='', max_tentativi=5, attesa=0.5):
 # ================================================================
 # NAVIGAZIONE SEZIONI
 # ================================================================
-def posizionati_su_carte():
+def posizionati_su_carte(attesa_iniziale=5, max_tentativi=5, attesa=0.5):
     # naviga alla sezione Carte della app
     print("  [nav] apertura sezione Carte...")
-    wait(5)
-    if not cerca_con_tentativi("1775294025267.png", 5, 0.5):
+    wait(attesa_iniziale)
+    if not cerca_con_tentativi("1775294025267.png", max_tentativi, attesa):
         print("  [nav] ERRORE: icona sezione Carte non trovata.")
         return False
     click(getLastMatch())
@@ -137,10 +146,10 @@ def posizionati_su_carte():
     wait(0.5)
     return True
 
-def posizionati_su_attivita():
+def posizionati_su_attivita(max_tentativi=5, attesa=0.5):
     # naviga alla sezione Attivita della app
     print("  [nav] apertura sezione Attivita...")
-    if not cerca_con_tentativi("1775217437436.png", 5, 0.5):
+    if not cerca_con_tentativi("1775217437436.png", max_tentativi, attesa):
         print("  [nav] ERRORE: icona sezione Attivita non trovata.")
         return False
     click(getLastMatch())
@@ -148,10 +157,10 @@ def posizionati_su_attivita():
     wait(0.5)
     return True
 
-def posizionati_su_menuutenza():
+def posizionati_su_menuutenza(max_tentativi=5, attesa=0.5):
     # apre il menu utente dal footer della app
     print("  [nav] apertura menu utente...")
-    if not cerca_con_tentativi(Pattern("1775217620164.png").targetOffset(-2, 32), 5, 0.5):
+    if not cerca_con_tentativi(Pattern("1775217620164.png").targetOffset(-2, 32), max_tentativi, attesa):
         print("  [nav] ERRORE: icona menu utente non trovata.")
         return False
     click(getLastMatch())
@@ -159,10 +168,10 @@ def posizionati_su_menuutenza():
     wait(0.5)
     return True
 
-def posizionati_su_menuutenza_ingranaggio():
+def posizionati_su_menuutenza_ingranaggio(max_tentativi=5, attesa=0.5):
     # apre le impostazioni tramite icona ingranaggio
     print("  [nav] apertura impostazioni ingranaggio...")
-    if not cerca_con_tentativi(Pattern("1775217843520.png").targetOffset(20, 19), 5, 0.5):
+    if not cerca_con_tentativi(Pattern("1775217843520.png").targetOffset(20, 19), max_tentativi, attesa):
         print("  [nav] ERRORE: icona ingranaggio non trovata.")
         return False
     click(getLastMatch())
@@ -173,61 +182,178 @@ def posizionati_su_menuutenza_ingranaggio():
 # ================================================================
 # LOGOUT
 # ================================================================
-def esci():
-    # esegue il logout dal account corrente (3 passi di conferma)
+def esci(max_tentativi=5, attesa=0.5):
+    # esegue il logout dal account corrente (4 passi di conferma)
 
     # passo 1: clicca sul pulsante Esci
-    print("  [logout 1/3] cerco pulsante Esci...")
-    if not cerca_con_tentativi("1775218288286.png", 5, 0.5):
-        print("  [logout 1/3] ERRORE: pulsante Esci non trovato.")
+    print("  [logout 1/4] cerco pulsante Esci...")
+    if not cerca_con_tentativi("1775218288286.png", max_tentativi, attesa):
+        print("  [logout 1/4] ERRORE: pulsante Esci non trovato.")
         return False
     click(getLastMatch())
-    print("  [logout 1/3] pulsante Esci cliccato OK")
+    print("  [logout 1/4] pulsante Esci cliccato OK")
     wait(0.5)
-    wheel(WHEEL_DOWN, 35)
+
+    # scroll senza mouseMove — evita "Mouse not useable (blocked)"
+    scroll_giu(volte=35, x=185, y=400, sposta_mouse=False)
 
     # passo 2: prima conferma logout
-    print("  [logout 2/3] prima conferma logout...")
-    if not cerca_con_tentativi(Pattern("1775217958402.png").targetOffset(-141, 45), 5, 0.5):
-        print("  [logout 2/3] ERRORE: prima conferma non trovata.")
+    print("  [logout 2/4] prima conferma logout...")
+    if not cerca_con_tentativi(Pattern("1775217958402.png").targetOffset(-141, 45), max_tentativi, attesa):
+        print("  [logout 2/4] ERRORE: prima conferma non trovata.")
         return False
     click(getLastMatch())
-    print("  [logout 2/3] prima conferma OK")
+    print("  [logout 2/4] prima conferma OK")
     wait(0.5)
 
     # passo 3: seconda conferma logout
-    print("  [logout 3/3] seconda conferma logout...")
-    if not cerca_con_tentativi(Pattern("1775218411391.png").targetOffset(111, 51), 5, 0.5):
-        print("  [logout 3/3] ERRORE: seconda conferma non trovata.")
+    print("  [logout 3/4] seconda conferma logout...")
+    if not cerca_con_tentativi(Pattern("1775218411391.png").targetOffset(111, 51), max_tentativi, attesa):
+        print("  [logout 3/4] ERRORE: seconda conferma non trovata.")
         return False
     click(getLastMatch())
-    print("  [logout 3/3] logout completato OK")
+    print("  [logout 3/4] logout completato OK")
     wait(0.5)
 
-    # passo 4: chiudi aoo
-    print("  [logout 4/4] chiudi app...")
-    if not cerca_con_tentativi(Pattern("1775296520334.png").targetOffset(14,-2), 5, 0.5):
-        print("  [logout 4/4] chiudi app..")
+    # passo 4: chiudi app WeWard
+    print("  [logout 4/4] chiudi app WeWard...")
+    if not cerca_con_tentativi(Pattern("1775296520334.png").targetOffset(14, -2), max_tentativi, attesa):
+        print("  [logout 4/4] ERRORE: chiudi app non trovata.")
         return False
     click(getLastMatch())
-    print("  [logout 4/4] logout completato OK")
+    print("  [logout 4/4] app chiusa OK")
     wait(0.5)
-    
+
     return True
 
-def esci_weward():
+def esci_weward(max_tentativi=5, attesa=0.5):
     # sequenza completa di logout da WeWard
     print(">>> [esci_weward] avvio sequenza logout...")
-    posizionati_su_attivita()
-    posizionati_su_menuutenza()
-    posizionati_su_menuutenza_ingranaggio()
-    esci()
-    print(">>> [esci_weward] logout completato OK")
+    ok = True
+    ok = posizionati_su_attivita(max_tentativi, attesa) and ok
+    ok = posizionati_su_menuutenza(max_tentativi, attesa) and ok
+    ok = posizionati_su_menuutenza_ingranaggio(max_tentativi, attesa) and ok
+    ok = esci(max_tentativi, attesa) and ok
+    if ok:
+        print(">>> [esci_weward] logout completato OK")
+    else:
+        print(">>> [esci_weward] ATTENZIONE: logout completato con errori.")
+    return ok
+
+# ================================================================
+# CONTROLLO CARTE
+# ================================================================
+def controlla_carte(max_tentativi=5, attesa=0.5):
+    """
+    Ritorna:
+      True  -> ci sono carte da raccogliere
+      False -> nessuna carta disponibile
+      None  -> errore tecnico (lista non trovata)
+    """
+    print("  [controlla_carte] cerco lista carte...")
+    if not cerca_con_tentativi("1775384530118.png", max_tentativi, attesa):
+        print("  [controlla_carte] ERRORE: lista carte non trovata.")
+        return None
+    click(getLastMatch())
+    wait(0.5)
+
+    print("  [controlla_carte] verifico carte disponibili...")
+    nessuna = cerca_con_tentativi(Pattern("1775384584244.png").similar(0.91), 2, attesa)
+    wait(0.5)
+
+    print("  [controlla_carte] torno indietro...")
+    if cerca_con_tentativi("1775385203175.png", max_tentativi, attesa):
+        click(getLastMatch())
+        print("  [controlla_carte] indietro OK")
+
+    if nessuna:
+        print("  [controlla_carte] nessuna carta disponibile.")
+        return False
+
+    print("  [controlla_carte] carte da raccogliere: SI")
+    return True
 
 # ================================================================
 # RACCOLTA CARTE
+# NOTA: questa cartella deve contenere anche i seguenti file PNG
+#       copiati da raccogli_sette_carte_no_google.sikuli:
+#         - angolo.png
+#         - carta_apri.png
+#         - carta_chiudi.png
+#         - 1775501853376.png
 # ================================================================
+def cerca_angolo_piu_vicino():
+    matches = list(findAll(Pattern("angolo.png").similar(0.80)))
+    if not matches:
+        print("Nessuna occorrenza di angolo trovata.")
+        return None
 
+    print("Trovate %d occorrenze di angolo." % len(matches))
+    mouse = Env.getMouseLocation()
+    piu_vicino = min(
+        matches,
+        key=lambda m: distanza(m.getCenter().x, m.getCenter().y, mouse.x, mouse.y)
+    )
+    centro = piu_vicino.getCenter()
+    print("Scelto il piu vicino: (%d, %d)  distanza: %.1f px" % (
+          centro.x, centro.y,
+          distanza(centro.x, centro.y, mouse.x, mouse.y)))
+    return piu_vicino
+
+def gestisci_carta():
+    if cerca_con_tentativi("carta_apri.png", 3, 0.5):
+        click(getLastMatch())
+        wait(0.5)
+    if cerca_con_tentativi("carta_chiudi.png", 3, 0.5):
+        click(getLastMatch())
+        wait(0.5)
+    if cerca_con_tentativi("1775501853376.png", 3, 0.5):
+        click(getLastMatch())
+        wait(0.5)
+
+def raccogli_carte(max_tentativi=10, attesa=4):
+    print("==> Cerco puntoblu...")
+    if cerca_con_tentativi("1775501853376.png", 3, 0.5):
+        click(getLastMatch())
+        wait(0.5)
+
+    cliccato = False
+
+    for tentativo in range(1, max_tentativi + 1):
+        print("--- Tentativo %d di %d ---" % (tentativo, max_tentativi))
+
+        match = cerca_angolo_piu_vicino()
+        if match is None:
+            if tentativo < max_tentativi:
+                print("Attendo %ds..." % attesa)
+                wait(attesa)
+            continue
+
+        centro = match.getCenter()
+        c = _robot.getPixelColor(centro.x, centro.y)
+        trovato = (c.getRed(), c.getGreen(), c.getBlue())
+        print("Pixel R:%d G:%d B:%d HEX:#%02x%02x%02x" % (
+              trovato[0], trovato[1], trovato[2],
+              trovato[0], trovato[1], trovato[2]))
+
+        if colore_vicino(trovato, TARGET):
+            print("Colore OK -> clicco!")
+            click(Location(centro.x, centro.y))
+            cliccato = True
+            wait(0.5)
+            gestisci_carta()
+        else:
+            print("Colore non corrisponde.")
+            if tentativo < max_tentativi:
+                print("Attendo %ds..." % attesa)
+                wait(attesa)
+
+    if cliccato:
+        print("==> Completato con successo.")
+    else:
+        print("==> Terminati i tentativi senza click.")
+
+    return cliccato
 
 # ================================================================
 # ESECUZIONE TUTTI GLI ACCOUNT
@@ -237,7 +363,7 @@ def esegui_tutti(max_tentativi=5, attesa=0.5):
     print("\n==============================")
     print("AVVIO CICLO SU TUTTI GLI ACCOUNT")
     print("==============================")
-    risultati = {}
+    risultati = []
     for account in ACCOUNT_CONFIG:
         wait(1.5)
         if not apri_weward(max_tentativi, attesa):
@@ -245,22 +371,25 @@ def esegui_tutti(max_tentativi=5, attesa=0.5):
             return
         print("\n------------------------------")
         ok = apri_account(account, max_tentativi, attesa)
-        risultati[account] = 'OK' if ok else 'FAIL'
         if ok:
-            posizionati_su_carte()
-            if  controlla_carte():
-                def_raccogli_carte.esegui()                
-            else:
-                print("  nessuna carta da raccogliere, passo al prossimo account.") 
-            esci_weward()
+            if posizionati_su_carte(attesa_iniziale=5, max_tentativi=max_tentativi, attesa=attesa):
+                stato = controlla_carte(max_tentativi, attesa)
+                if stato is True:
+                    raccogli_carte()
+                elif stato is False:
+                    print("  nessuna carta da raccogliere, passo al prossimo account.")
+                else:
+                    print("  ERRORE verifica carte, passo al prossimo account.")
         else:
             print("  account {0} saltato per errore login.".format(account))
+        esci_weward(max_tentativi, attesa)
+        risultati.append((account, 'OK' if ok else 'FAIL'))
     print("\n==============================")
     print("RIEPILOGO FINALE")
     print("==============================")
-    for acc, esito in risultati.items():
+    for acc, esito in risultati:
         print("  {0}  {1}".format(esito, acc))
-    return
+
 # ================================================================
 # ESECUZIONE SINGOLO ACCOUNT
 # ================================================================
@@ -276,42 +405,20 @@ def esegui_uno(account, max_tentativi=5, attesa=0.5):
 
     ok = apri_account(account, max_tentativi, attesa)
     if ok:
-        posizionati_su_carte()
-        raccogli_carte(max_carte=7, timeout=60)
-        esci_weward()
+        if posizionati_su_carte(attesa_iniziale=5, max_tentativi=max_tentativi, attesa=attesa):
+            stato = controlla_carte(max_tentativi, attesa)
+            if stato is True:
+                raccogli_carte()
+            elif stato is False:
+                print("  nessuna carta da raccogliere.")
+            else:
+                print("  ERRORE verifica carte.")
+    esci_weward(max_tentativi, attesa)
 
     print("\n==============================")
     print("RIEPILOGO: {0}  {1}".format('OK' if ok else 'FAIL', account))
     print("==============================")
-    return
 
-def controlla_carte():
-    # controlla se ci sono carte disponibili da raccogliere
-    flagexit = True
-
-    # passo 1: cerca lista carte
-    print("  [controlla_carte] cerco lista carte...")
-    if not cerca_con_tentativi("1775384530118.png", 5, 0.5):
-        print("  [controlla_carte] lista carte non trovata.")
-        return False       # esce subito dalla funzione
-    click(getLastMatch())  # clicca solo se trovata
-    wait(0.5)
-
-    # passo 2: verifica se ci sono carte disponibili
-    print("  [controlla_carte] verifico carte disponibili...")
-    if cerca_con_tentativi(Pattern("1775384584244.png").similar(0.91), 2, 0.5):
-        print("  [controlla_carte] nessuna carta disponibile.")
-        flagexit = False
-    wait(0.5)
-
-    # passo 3: torna indietro
-    print("  [controlla_carte] torno indietro...".format(flagexit))
-    if cerca_con_tentativi("1775385203175.png", 5, 0.5):
-        click(getLastMatch())
-        print("  [controlla_carte] indietro OK".format(flagexit))
-
-    print("  [controlla_carte] carte da raccogliere: {0}".format(str(flagexit)))
-    return flagexit
 # ================================================================
 # AVVIO SCRIPT
 # ================================================================
