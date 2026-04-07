@@ -1,7 +1,13 @@
 import time
 import sys
+import math
 sys.path.append(getBundlePath())   # trova i moduli nella stessa cartella .sikuli
 from sikuli import *   # <-- aggiunge tutte le funzioni SikuliX al modulo
+import java.awt.Robot as Robot
+import java.awt.event.InputEvent as InputEvent
+
+_robot = Robot()
+TARGET = (14, 129, 115)
 # lancia tutto
 
 
@@ -40,6 +46,14 @@ def cerca_con_tentativi(immagine, max_tentativi=5, attesa=0.5):
         wait(attesa)
     print("  ERRORE: [{0}] non trovata dopo {1} tentativi.".format(immagine, max_tentativi))
     return False
+
+def colore_vicino(c1, c2, soglia=20):
+    return (abs(c1[0]-c2[0]) < soglia and
+            abs(c1[1]-c2[1]) < soglia and
+            abs(c1[2]-c2[2]) < soglia)
+
+def distanza(x1, y1, x2, y2):
+    return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
 # ================================================================
 # APERTURA APP
@@ -227,7 +241,78 @@ def esci_weward():
 # ================================================================
 # RACCOLTA CARTE
 # ================================================================
+def cerca_angolo_piu_vicino():
+    matches = list(findAll(Pattern("angolo.png").similar(0.80)))
+    if not matches:
+        print("Nessuna occorrenza di angolo trovata.")
+        return None
 
+    print("Trovate %d occorrenze di angolo." % len(matches))
+    mouse = Env.getMouseLocation()
+    piu_vicino = min(
+        matches,
+        key=lambda m: distanza(m.getCenter().x, m.getCenter().y, mouse.x, mouse.y)
+    )
+    centro = piu_vicino.getCenter()
+    print("Scelto il piu vicino: (%d, %d)  distanza: %.1f px" % (
+          centro.x, centro.y,
+          distanza(centro.x, centro.y, mouse.x, mouse.y)))
+    return piu_vicino
+
+def gestisci_carta():
+    if cerca_con_tentativi("carta_apri.png", 3, 0.5):
+        click(getLastMatch())
+        wait(0.5)
+    if cerca_con_tentativi("carta_chiudi.png", 3, 0.5):
+        click(getLastMatch())
+        wait(0.5)
+    if cerca_con_tentativi("1775501853376.png", 3, 0.5):
+        click(getLastMatch())
+        wait(0.5)
+
+def raccogli_carte(max_tentativi=10, attesa=4):
+    print("==> Cerco puntoblu...")
+    if cerca_con_tentativi("1775501853376.png", 3, 0.5):
+        click(getLastMatch())
+        wait(0.5)
+
+    cliccato = False
+
+    for tentativo in range(1, max_tentativi + 1):
+        print("--- Tentativo %d di %d ---" % (tentativo, max_tentativi))
+
+        match = cerca_angolo_piu_vicino()
+        if match is None:
+            if tentativo < max_tentativi:
+                print("Attendo %ds..." % attesa)
+                wait(attesa)
+            continue
+
+        centro = match.getCenter()
+        c = _robot.getPixelColor(centro.x, centro.y)
+        trovato = (c.getRed(), c.getGreen(), c.getBlue())
+        print("Pixel R:%d G:%d B:%d HEX:#%02x%02x%02x" % (
+              trovato[0], trovato[1], trovato[2],
+              trovato[0], trovato[1], trovato[2]))
+
+        if colore_vicino(trovato, TARGET):
+            print("Colore OK -> clicco!")
+            click(Location(centro.x, centro.y))
+            cliccato = True
+            wait(0.5)
+            gestisci_carta()
+        else:
+            print("Colore non corrisponde.")
+            if tentativo < max_tentativi:
+                print("Attendo %ds..." % attesa)
+                wait(attesa)
+
+    if cliccato:
+        print("==> Completato con successo.")
+    else:
+        print("==> Terminati i tentativi senza click.")
+
+    return cliccato
 
 # ================================================================
 # ESECUZIONE TUTTI GLI ACCOUNT
@@ -249,7 +334,7 @@ def esegui_tutti(max_tentativi=5, attesa=0.5):
         if ok:
             posizionati_su_carte()
             if  controlla_carte():
-                def_raccogli_carte.esegui()                
+                raccogli_carte()
             else:
                 print("  nessuna carta da raccogliere, passo al prossimo account.") 
             esci_weward()
