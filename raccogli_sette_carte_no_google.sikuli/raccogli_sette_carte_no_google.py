@@ -18,7 +18,7 @@ ACCOUNT_CONFIG = [
     ('garsal1971.ft',        "1775319581445.png"),
     ('garsal1971.bollette',  "1775324188161.png"),
     ('garsal1971.fit',       "1775325772118.png"),
-    # aggiungi altri account qui sotto: ('nome', "immagine.png")
+    # aggiungi altri account qui sotto: ('nome_account', 'immagine_google')
 ]
 
 # ================================================================
