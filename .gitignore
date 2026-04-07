@@ -1,0 +1,31 @@
+﻿# Java
+*.class
+*.jar
+!libs/*.jar
+
+# SikuliX
+*.log
+RunningApps/
+SikuliX/
+.sikuli/*.png.bak
+*.pyc
+__pycache__/
+
+# File temporanei SikuliX (prefisso underscore)
+_*
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+.project
+.classpath
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Output / report test
+reports/
+results/
