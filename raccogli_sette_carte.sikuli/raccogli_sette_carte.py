@@ -34,26 +34,6 @@ ACCOUNT_CONFIG = {
     # aggiungi altri account qui sotto
 }
 
-# ================================================================
-# UTILITY
-# ================================================================
-def cerca_con_tentativi(immagine, max_tentativi=5, attesa=0.5):
-    # cerca immagine sullo schermo con N tentativi prima di rinunciare
-    for t in range(1, max_tentativi + 1):
-        if exists(immagine):
-            return True
-        print("    tentativo {0}/{1} fallito per [{2}], attendo {3}s...".format(t, max_tentativi, immagine, attesa))
-        wait(attesa)
-    print("  ERRORE: [{0}] non trovata dopo {1} tentativi.".format(immagine, max_tentativi))
-    return False
-
-def colore_vicino(c1, c2, soglia=20):
-    return (abs(c1[0]-c2[0]) < soglia and
-            abs(c1[1]-c2[1]) < soglia and
-            abs(c1[2]-c2[2]) < soglia)
-
-def distanza(x1, y1, x2, y2):
-    return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
 # ================================================================
 # APERTURA APP
@@ -68,7 +48,15 @@ def apri_weward(max_tentativi=5, attesa=0.5):
     print(">>> [apri_weward] app aperta OK")
     wait(0.5)
     return True
-
+def cerca_con_tentativi(immagine, max_tentativi=5, attesa=0.5):
+    for t in range(1, max_tentativi + 1):
+        if exists(immagine):
+            return True
+        print("    tentativo {0}/{1} fallito per [{2}], attendo {3}s...".format(
+              t, max_tentativi, immagine, attesa))
+        wait(attesa)
+    print("  ERRORE: [{0}] non trovata dopo {1} tentativi.".format(immagine, max_tentativi))
+    return False
 # ================================================================
 # LOGIN ACCOUNT
 # ================================================================
@@ -259,60 +247,36 @@ def cerca_angolo_piu_vicino():
           distanza(centro.x, centro.y, mouse.x, mouse.y)))
     return piu_vicino
 
-def gestisci_carta():
-    if cerca_con_tentativi("carta_apri.png", 3, 0.5):
-        click(getLastMatch())
-        wait(0.5)
-    if cerca_con_tentativi("carta_chiudi.png", 3, 0.5):
-        click(getLastMatch())
-        wait(0.5)
-    if cerca_con_tentativi("1775501853376.png", 3, 0.5):
-        click(getLastMatch())
-        wait(0.5)
+
 
 def raccogli_carte(max_tentativi=10, attesa=4):
     print("==> Cerco puntoblu...")
-    if cerca_con_tentativi("1775501853376.png", 3, 0.5):
-        click(getLastMatch())
-        wait(0.5)
+    doubleClick("1776370021625.png")    
+    wait(0.5)
+    doubleClick("1776370021625.png")
+    wait(0.5)
+    doubleClick("1776370021625.png")
+    wait(0.5)   
 
-    cliccato = False
-
-    for tentativo in range(1, max_tentativi + 1):
+    tentativo = 0
+    prese = 0
+    while prese < 7 and tentativo < max_tentativi:
         print("--- Tentativo %d di %d ---" % (tentativo, max_tentativi))
 
-        match = cerca_angolo_piu_vicino()
-        if match is None:
-            if tentativo < max_tentativi:
-                print("Attendo %ds..." % attesa)
-                wait(attesa)
-            continue
+        if exists(Pattern("1776442897675.png").similar(0.90)):
+            print("esiste carta clicco")
+            click(Pattern("1776442897675.png").similar(0.90))
 
-        centro = match.getCenter()
-        c = _robot.getPixelColor(centro.x, centro.y)
-        trovato = (c.getRed(), c.getGreen(), c.getBlue())
-        print("Pixel R:%d G:%d B:%d HEX:#%02x%02x%02x" % (
-              trovato[0], trovato[1], trovato[2],
-              trovato[0], trovato[1], trovato[2]))
-
-        if colore_vicino(trovato, TARGET):
-            print("Colore OK -> clicco!")
-            click(Location(centro.x, centro.y))
-            cliccato = True
-            wait(0.5)
-            gestisci_carta()
-        else:
-            print("Colore non corrisponde.")
-            if tentativo < max_tentativi:
-                print("Attendo %ds..." % attesa)
-                wait(attesa)
-
-    if cliccato:
-        print("==> Completato con successo.")
-    else:
-        print("==> Terminati i tentativi senza click.")
-
-    return cliccato
+            if exists("1776443662760.png"):
+                print("esiste carta da aprire")
+                click("1776443662760.png")
+                if exists("1776443756642.png"):
+                     print("esiste chiudo carta presa")
+                     click("1776443756642.png")
+                     prese = prese + 1
+        tentativo = tentativo + 1
+    print("prese " + str(prese) + " - tentativo " + str(tentativo))
+    return 
 
 # ================================================================
 # ESECUZIONE TUTTI GLI ACCOUNT
@@ -334,7 +298,7 @@ def esegui_tutti(max_tentativi=5, attesa=0.5):
         if ok:
             posizionati_su_carte()
             if  controlla_carte():
-                raccogli_carte()
+                raccogli_carte(max_tentativi=21)
             else:
                 print("  nessuna carta da raccogliere, passo al prossimo account.") 
             esci_weward()
@@ -349,26 +313,6 @@ def esegui_tutti(max_tentativi=5, attesa=0.5):
 # ================================================================
 # ESECUZIONE SINGOLO ACCOUNT
 # ================================================================
-def esegui_uno(account, max_tentativi=5, attesa=0.5):
-    # esegue login, raccolta carte e logout per un singolo account
-    print("\n==============================")
-    print("AVVIO ACCOUNT: {0}".format(account))
-    print("==============================")
-
-    if not apri_weward(max_tentativi, attesa):
-        print("ERRORE: impossibile aprire WeWard, script interrotto.")
-        return
-
-    ok = apri_account(account, max_tentativi, attesa)
-    if ok:
-        posizionati_su_carte()
-        raccogli_carte(max_carte=7, timeout=60)
-        esci_weward()
-
-    print("\n==============================")
-    print("RIEPILOGO: {0}  {1}".format('OK' if ok else 'FAIL', account))
-    print("==============================")
-    return
 
 def controlla_carte():
     # controlla se ci sono carte disponibili da raccogliere
@@ -401,4 +345,5 @@ def controlla_carte():
 # AVVIO SCRIPT
 # ================================================================
 # esegui_uno('berros7426', 5, 0.5)
-esegui_tutti(max_tentativi=5, attesa=0.5)
+esegui_tutti(max_tentativi=15, attesa=0.5)
+#raccogli_carte(max_tentativi=15)
