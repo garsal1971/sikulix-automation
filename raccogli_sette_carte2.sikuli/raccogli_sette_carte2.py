@@ -183,6 +183,8 @@ def apri_account(account='', max_tentativi=2, attesa=0.5):
     wait(attesa)
 
     print("  [2/5] selezione account {0} tramite bentornato...".format(account))
+    hover(Location(185, 272))
+    wait(0.5)
     click(Location(185, 272))
     print("  [2/5] account selezionato OK")
     wait(attesa)
