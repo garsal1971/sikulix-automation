@@ -318,7 +318,7 @@ def raccogli_carte(max_tentativi=10, attesa=4):
         print("--- Tentativo %d di %d ---" % (tentativo, max_tentativi))
 
         set_next_position()
-        wait(1)
+        wait(4)
 
         carta = exists(Pattern("1776442897675-3.png").similar(0.90))
         if carta:
